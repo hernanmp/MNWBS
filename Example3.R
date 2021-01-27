@@ -1,12 +1,17 @@
 
-
-
 rm(list = ls())
 
-working_directory = "/Users/oscar/Documents/GitHub/MNWBS"
+#working_directory = "/Users/oscar/Desktop/Anomaly_detection/supplementary_materials/supplementary_materials/Experiments"
+working_directory = "C:/Users/DELL/Desktop/change_point_code/MNWBS"
 setwd(working_directory)
+#setwd(paste(working_directory,"/Code_J",sep=""))
+source("auxiliary_functions.R")
+#working_directory = "/Users/oscar/Documents/GitHub/MNWBS"
+#setwd(working_directory)
 source("utils2.R")
+#source("utils3.R")
 library(ecp)
+#working_directory = "/Users/oscar/Desktop/change_point_code/NWBS/"
 #setwd(paste(working_directory,"/Code_J",sep=""))
 #source("utils_functions.R")
 #source('utils.R')
@@ -14,6 +19,11 @@ library(MASS)
 library(ks)
 library(kdensity)
 library(moments)
+#install.packages("kernseg")
+library(KernSeg)
+library(hdbinseg)
+library(mvtnorm)
+
 T_grid  = c(300,150)
 #v =  c(150,300)
 p_grid   = c(20,10)
@@ -21,7 +31,7 @@ p_grid   = c(20,10)
 #z =  matrix(0,T,p)
 #u = matrix(0,T,p)
 
-NMC =  100
+NMC = 100
 
 ind_t = 1
 ind_p = 1
@@ -29,12 +39,21 @@ ind_p = 1
 
 hausdorff_wbs =   array(0,c(NMC,  length(T_grid),  length(p_grid)))
 hausdorff_energy =  array(0,c(NMC,  length(T_grid),  length(p_grid)))
+hausdorff_kcp =  array(0,c(NMC,  length(T_grid),  length(p_grid)))
+hausdorff_sbs =  array(0,c(NMC,  length(T_grid),  length(p_grid)))
+hausdorff_dcbs =  array(0,c(NMC,  length(T_grid),  length(p_grid)))
 
 hausdorff2_wbs =   array(0,c(NMC,  length(T_grid),  length(p_grid)))
 hausdorff2_energy =  array(0,c(NMC,  length(T_grid),  length(p_grid)))
+hausdorff2_kcp =  array(0,c(NMC,  length(T_grid),  length(p_grid)))
+hausdorff2_sbs =  array(0,c(NMC,  length(T_grid),  length(p_grid)))
+hausdorff2_dcbs =  array(0,c(NMC,  length(T_grid),  length(p_grid)))
 
 error_wbs =   array(0,c(NMC,  length(T_grid),length(p_grid)))
 error_energy =   array(0,c(NMC,  length(T_grid),length(p_grid)))
+error_kcp =   array(0,c(NMC,  length(T_grid),length(p_grid)))
+error_sbs =   array(0,c(NMC,  length(T_grid),length(p_grid)))
+error_dcbs =   array(0,c(NMC,  length(T_grid),length(p_grid)))
 
 for(ind_t in 1:length(T_grid))
 {
@@ -50,35 +69,59 @@ for(ind_t in 1:length(T_grid))
     print("p")
     print(p)
     
-    v =  c(floor(T/3),2*floor(T/3))
+    v =  c(floor(T/7),floor(T/7)+floor(T/14),floor(T/7)+3*floor(T/14),floor(T/7)+4*floor(T/14),floor(T/7)+6*floor(T/14),6*floor(T/7))
+
     
     y =  matrix(0,T,p)
     z =  matrix(0,T,p)
     
     mu0 =   rep(0,p)
     mu1 = rep(0,p)
-    #[1] =  1
     Sigma0 =  diag(p)
-    Sigma1 =  0.5*diag(p) + 0.5*matrix(1,p,p) 
-    # Sigma1[1:floor(p/2)] = 
+    Sigma2 =  2*diag(p) + 0.8*matrix(1,p,p) 
+    Sigma1 =  0.1*diag(p) + 0.9*matrix(1,p,p)
+  
     
     for(iter in 1:NMC)
     {
       print("iter")
       for(t in 1:T)
       {
-        if(t <v[1] ||  t > v[2])
+        if(t <v[1])
         {
-          y[t,] = mvrnorm(n = 1, mu0, Sigma0)
-          z[t,] = mvrnorm(n = 1, mu0, Sigma0)
+          y[t,] = mvrnorm(n = 1, mu1, Sigma1)
+          z[t,] = mvrnorm(n = 1, mu1, Sigma1)
         }
         
         if(t >=v[1] &&  t < v[2])
         {
-          y[t,] = mvrnorm(n = 1, mu1, Sigma1)
-          z[t,] = mvrnorm(n = 1, mu1, Sigma1)
-          # y[t,1:2] = y[t,1]
-          # z[t,1:2] = z[t,1]
+          y[t,] = mvrnorm(n = 1, mu1, Sigma2)
+          z[t,] = mvrnorm(n = 1, mu1, Sigma2)
+        }
+        if(t >=v[2] &&  t < v[3])
+        {
+          y[t,] = mvrnorm(n = 1, mu0, Sigma0)
+          z[t,] = mvrnorm(n = 1, mu0, Sigma0)
+        }
+        if(t >=v[3] &&  t < v[4])
+        {
+          y[t,] = mvrnorm(n = 1, mu0, Sigma1)
+          z[t,] = mvrnorm(n = 1, mu0, Sigma1)
+        }
+        if(t >=v[4] &&  t < v[5])
+        {
+          y[t,] = mvrnorm(n = 1, mu0, Sigma0)
+          z[t,] = mvrnorm(n = 1, mu0, Sigma0)
+        }
+        if(t >=v[5] &&  t < v[6])
+        {
+          y[t,] = mvrnorm(n = 1, mu0, Sigma1)
+          z[t,] = mvrnorm(n = 1, mu0, Sigma1)
+        }
+        if(t >=v[6])
+        {
+          y[t,] = mvrnorm(n = 1, mu0, Sigma2)
+          z[t,] = mvrnorm(n = 1, mu0, Sigma2)
         }
       }## close for generate data
       
@@ -120,23 +163,47 @@ for(ind_t in 1:length(T_grid))
       
       temp = e.divisive(y)
       temp$estimates = setdiff(temp$estimates,c(1,T+1))
-      #temp = e.cp3o_delta(Z= u,K=10, delta=10, alpha=1, verbose=FALSE)
-      #temp$estimates =  floor(temp$estimates/2)
       hausdorff_energy[iter,ind_t,ind_p] =  dist_change_points(temp$estimates,v)
       hausdorff2_energy[iter,ind_t,ind_p] =  dist_change_points(v,temp$estimates)
       error_energy[iter,ind_t,ind_p] =  length(v) - length(temp$estimates) 
       
       
-      print("energy")
-      print(median(hausdorff_energy[iter,ind_t,ind_p]))
-      print(median(hausdorff2_energy[iter,ind_t,ind_p]))
-      print(mean(abs(error_energy[iter,ind_t,ind_p])))
+      ####################################33
       
-      print("NP")
-      print(median(hausdorff_wbs[iter,ind_t,ind_p]))
-      print(median(hausdorff2_wbs[iter,ind_t,ind_p]))
-      print(mean(abs(error_wbs[iter,ind_t,ind_p])))
+      
+      aux = KernSeg_MultiD(y, Kmax=20, delta = 30, min.size = 2, 
+                           alpha = NULL, kernel = "Gaussian", option = 0)
+      
+      
+      best_ind = which.max(abs(diff(aux$J.est)))
+      est_cp = aux$t.est[best_ind,]
+      est_cp =  sort(setdiff(aux$t.est[best_ind,],c(0,1,T)))
+      #est_cp
+      
+      hausdorff_kcp[iter,ind_t,ind_p] =  dist_change_points(est_cp,v)
+      hausdorff2_kcp[iter,ind_t,ind_p] =  dist_change_points(v,est_cp)
+      error_kcp[iter,ind_t,ind_p] =  length(v) - length(est_cp) 
+      
+      ############################################################# 
+      aux = sbs.alg(t(y),do.parallel=0)
+      est_sbs= sort(setdiff(aux$ecp,c(1,T) ))
+      
+      hausdorff_sbs[iter,ind_t,ind_p] =  dist_change_points(est_sbs,v)
+      hausdorff2_sbs[iter,ind_t,ind_p] =  dist_change_points(v,est_sbs)
+      error_sbs[iter,ind_t,ind_p] =  length(v) - length(est_sbs)
+      ############################################################# 
+      
+      aux = dcbs.alg(t(y), cp.type=1, phi=-1, temporal=FALSE, do.parallel=0)$ecp
+      est_dcbs = sort(setdiff(aux,c(1,T) ))
+      
+      hausdorff_dcbs[iter,ind_t,ind_p] =  dist_change_points(est_dcbs,v)
+      hausdorff2_dcbs[iter,ind_t,ind_p] =  dist_change_points(v,est_dcbs)
+      error_dcbs[iter,ind_t,ind_p] =  length(v) - length(est_dcbs)
+      ############################################################# 
+      
+      
     }### close for iter
+    
     
     print("energy")
     print(median(hausdorff_energy[,ind_t,ind_p]))
@@ -147,6 +214,20 @@ for(ind_t in 1:length(T_grid))
     print(median(hausdorff_wbs[,ind_t,ind_p]))
     print(median(hausdorff2_wbs[,ind_t,ind_p]))
     print(mean(abs(error_wbs[,ind_t,ind_p])))
+    
+    print("kcp")
+    print(median(hausdorff_kcp[,ind_t,ind_p]))
+    print(median(hausdorff2_kcp[,ind_t,ind_p]))
+    print(mean(abs(error_kcp[,ind_t,ind_p])))
+    
+    print("sbs")
+    print(median(hausdorff_sbs[,ind_t,ind_p]))
+    print(median(hausdorff2_sbs[,ind_t,ind_p]))
+    print(mean(abs(error_sbs[,ind_t,ind_p])))
+    
+    print("dcbs")
+    print(median(hausdorff_dcbs[,ind_t,ind_p]))
+    print(median(hausdorff2_dcbs[,ind_t,ind_p]))
+    print(mean(abs(error_dcbs[,ind_t,ind_p])))
   }## close for p
 }## close for T
-
