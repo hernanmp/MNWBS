@@ -33,7 +33,7 @@ p_grid   = c(20,10)
 #z =  matrix(0,T,p)
 #u = matrix(0,T,p)
 
-NMC = 25
+NMC = 100
 
 ind_t = 1
 ind_p = 1
@@ -79,7 +79,7 @@ for(ind_t in 1:length(T_grid))
     mu0 =   rep(0,p)
     mu1 = rep(0,p)
     #mu2 = rep(.0,p)
-    mu1[1:floor(p/2)] =  0.5
+    mu1[1:floor(p/2)] =  1
     Sigma0 =  diag(p)
     Sigma1 = diag(p)
     
